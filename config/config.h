@@ -22,12 +22,11 @@ inline constexpr float VOLTS_TO_ADC = MAX_DAC_VALUE / 4.095f;
 #pragma pack(push, 1)
 struct data_point {
     float timestamp;
-    float voltage1;
-    float voltage2;
-    data_point(float t = -1.0f, float v1 = -1.0f, float v2 = -1.0f) : timestamp(t), voltage1(v1), voltage2(v2) {}
-    void print() const { std::cout << voltage1 << " " << voltage2 << " " << timestamp << "\n"; }
+    float voltage;
+    data_point(float t = -1.0f, float v = -1.0f) : timestamp(t), voltage(v) {}
+    void print() const { std::cout << voltage << " " << timestamp << "\n"; }
     bool operator==(const data_point& other) const {
-        return (timestamp == other.timestamp) && (voltage1 == other.voltage1) && (voltage2 == other.voltage2);
+        return (timestamp == other.timestamp) && (voltage == other.voltage);
     }
 };
 
@@ -40,7 +39,7 @@ struct command {
     int func;
 
     command(int c = -1, int s = -1, float a = -1.0f, float pf = -1.0f, float wf = -1.0f, float o = -1.0f)
-    : amp(a), pulse_freq(pf), wave_freq(wf), offset(o), cmd(c), func(s) {}
+        : cmd(c), func(s), amp(a), pulse_freq(pf), wave_freq(wf), offset(o) {}
 
     void print() const {
         std::cout << "amp: " << amp << ", pulse_freq: " << pulse_freq

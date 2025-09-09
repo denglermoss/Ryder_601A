@@ -77,3 +77,22 @@ void Comm::end_comm(){
     close(server_fd);
 }
 
+int Comm::handle_cmd(command& cmd) {
+    switch (cmd.cmd) {
+        case CLOSE_COMMAND.cmd:
+            return -1;
+        case STOP_COMMAND.cmd:
+            WaveGen::stop();
+            Measurement::stop_reading();
+            return 0;
+        case START_COMMAND.cmd:
+            WaveGen::start();
+            Measurement::init();
+            return 1;
+        case 2:
+            return WaveGen::setup(cmd);
+        default:
+            return -1;
+    }
+}
+

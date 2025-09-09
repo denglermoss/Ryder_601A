@@ -12,16 +12,16 @@ public:
     bool open(int channel, int speed, int flags = 0);
     void close();
 
-    inline bool write(char* buf, int len) const {
-        return spiWrite(spi_handle, buf, len) == len;
+    inline bool write(const uint8_t* buf, int len) const {
+        return spiWrite(spi_handle, reinterpret_cast<const char*>(buf), len) == len;
     }
 
-    inline bool read(char* buf, int len) const {
-        return spiRead(spi_handle, buf, len) == len;
+    inline bool read(uint8_t* buf, int len) const {
+        return spiRead(spi_handle, reinterpret_cast<char*>(buf), len) == len;
     }
 
-    inline bool transfer(char* buf, int len) const {
-        return spiXfer(spi_handle, buf, buf, len) == len;
+    inline bool transfer(uint8_t* buf, int len) const {
+        return spiXfer(spi_handle, reinterpret_cast<char*>(buf), reinterpret_cast<char*>(buf), len) == len;
     }
 
     bool is_open() const { return spi_handle >= 0; }

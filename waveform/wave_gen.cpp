@@ -13,6 +13,7 @@ namespace {
     volatile int sample_index = 0;
     volatile int num_points_pulse = WAVEFORM_UPDATE_RATE;
     volatile int num_points_wave = WAVEFORM_UPDATE_RATE;
+    volatile bool running = false;
 }
 
 int scale_table(float in_min, float in_max, float amp, float offset) {
@@ -74,10 +75,16 @@ int WaveGen::setup(command cmd) {
 	return 1;
 }
 
-void WaveGen::reset_sample_index(){
+void WaveGen::start(){
+	running = true;
 	sample_index = 0;
 }
 
+void WaveGen::stop() {
+    running = false;
+    sample_index = 0;
+    spi.write(zero_buf,2);
+}
 
 void WaveGen::init(){
 	if (!spi.open(DAC_CHANNEL, SPI_SPEED, 1)) {
@@ -86,7 +93,8 @@ void WaveGen::init(){
     }
 }
 
-void WaveGen::update(int samples_to_skip) {
+void WaveGen::update() {
+    if (!running) return;
 	sample_index += samples_to_skip;
 	if (sample_index <= num_points_pulse) {
         char* data = (sample_index < num_points_pulse) ? spi_table[sample_index] : zero_buf;

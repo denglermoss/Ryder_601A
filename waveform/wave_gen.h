@@ -6,7 +6,8 @@
 namespace WaveGen{
 	void init();
 	void update(int samples_to_skip = 0);
-	void reset_sample_index();
+	void start();
+	void stop();
 	int setup(command cmd);
 }
 
