@@ -1,13 +1,12 @@
 #include "wave_gen.h"
 #include "waveform/functions.h"
-#include "spi/spi_interface.h"
+#include "wrappers/dac8532_driver.h"
+#include "config/config.h"
 #include <limits>
 #include <iostream>
 
 namespace {
-    SpiInterface spi;
-    char spi_table[WAVEFORM_UPDATE_RATE][2];
-    char zero_buf[2] = {0, 0};
+    uint16_t code_table[WAVEFORM_UPDATE_RATE];
     float temp_table[WAVEFORM_UPDATE_RATE];
 
     volatile int sample_index = 0;
@@ -34,12 +33,9 @@ int scale_table(float in_min, float in_max, float amp, float offset) {
 
 	float scale = static_cast<float>(out_max - out_min) / (in_max - in_min);
 	float shift = -in_min * scale + out_min;
-	uint16_t val;
-	for (int i = 0; i < num_points_pulse; i++) {
-		val = static_cast<uint16_t>(temp_table[i] * scale + shift);
-		spi_table[i][0] = (val >> 8) & 0xFF;
-		spi_table[i][1] = val & 0xFF;
-	}
+    	for (int i = 0; i < num_points_pulse; i++) {
+    		code_table[i] = static_cast<uint16_t>(temp_table[i] * scale + shift);
+    	}
 
     std::cout << "Table Generated with DAC scaling [" << out_min << ", " << out_max << "]" << std::endl;
 
@@ -80,17 +76,16 @@ void WaveGen::reset_sample_index(){
 
 
 void WaveGen::init(){
-	if (!spi.open(DAC_CHANNEL, SPI_SPEED, 1)) {
-        std::cerr << "DAC SPI Setup failed!" << std::endl;
-        return;
-    }
+    DAC8532Driver::init();
 }
 
 void WaveGen::update(int samples_to_skip) {
 	sample_index += samples_to_skip;
-	if (sample_index <= num_points_pulse) {
-        char* data = (sample_index < num_points_pulse) ? spi_table[sample_index] : zero_buf;
-        spi.write(data, 2);  // CHANGED: use SpiInterface
-	}
+	    if (sample_index <= num_points_pulse) {
+        uint16_t code = (sample_index < num_points_pulse) ? code_table[sample_index] : 0;
+        // Convert code (0..MAX_DAC_VALUE) to volts for DAC driver
+        float volts = static_cast<float>(code) * (3.3f / static_cast<float>(MAX_DAC_VALUE));
+        DAC8532Driver::writeA(volts);
+    }
 	sample_index = (sample_index + 1) % num_points_wave;
 }

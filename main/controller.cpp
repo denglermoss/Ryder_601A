@@ -1,22 +1,23 @@
 #include "controller.h"
 #include "waveform/wave_gen.h"
-#include "measurement/measurement.h"
 #include "comm/comm.h"
 #include "config/config.h"
+#include "wrappers/ads1256_driver.h"
+#include "wrappers/dac8532_driver.h"
 #include <thread>
 #include <chrono>
 #include <iostream>
 #include <atomic>
-#include <pigpio.h>
 
 void Controller::run() {
     measurement_start = std::chrono::steady_clock::now();
-    if (gpioInitialise() < 0) {
-        std::cerr << "pigpio initialization failed!" << std::endl;
+    // Initialize ADC/DAC stack via wrappers (bcm2835 under the hood)
+    if (!ADS1256Driver::init()) {
+        std::cerr << "ADS1256 init failed" << std::endl;
         return;
     }
+    DAC8532Driver::init();
     WaveGen::init();
-    adc.init(ADC_CHANNEL,SPI_SPEED);
     if (Comm::init() == -1) return;
 
     start_threads();
@@ -29,7 +30,7 @@ void Controller::run() {
 }
 
 void Controller::shutdown() {
-    gpioTerminate();
+    ADS1256Driver::shutdown();
     Comm::end_comm();
     running = false;
 }
@@ -97,8 +98,8 @@ void Controller::measurement_loop() {
         if (active) {
             auto timestamp = duration<float>(steady_clock::now() - measurement_start).count();
 
-            int32_t raw0 = adc.readAIN0();
-            int32_t raw3 = adc.readAIN3();
+            int32_t raw0 = ADS1256Driver::read_channel(0);
+            int32_t raw3 = ADS1256Driver::read_channel(3);
             if (raw0 != -1 && raw3 != -1) {
                 float voltage0 = raw0 * ADC_TO_VOLTS;
                 float voltage3 = raw3 * ADC_TO_VOLTS;

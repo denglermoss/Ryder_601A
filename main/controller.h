@@ -4,7 +4,6 @@
 #include <thread>           // std::thread
 #include <atomic>           // std::atomic
 #include <chrono>           // std::chrono::steady_clock::time_point
-#include "measurement/measurement.h"
 
 class Controller {
 public:
@@ -18,7 +17,7 @@ private:
     void start_threads();
     void stop_threads();
 
-    ADS1220 adc;
+    // ADC handled via ADS1256 wrapper directly; no member needed.
 
     std::thread cmd_thread;
     std::thread wave_thread;
